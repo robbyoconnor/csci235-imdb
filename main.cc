@@ -24,10 +24,35 @@ using namespace std;
  * @param done the sentinel value (passed by reference) to determine when to terminate the program.
  */
 void displayMenu(bool &done);
+
+/**
+ * This is a helper function to help determine the costars of a given actor or actress.
+ * @param actorName the name of the actor or actress
+ * @oaram fileName the file name (utility purpose)
+ * @return a vector containing the Movies for a given actor. or actress
+ */
 vector<Movie> findMoviesFor(string actorName, string fileName);
+
+/**
+ * Finds all the actors who ever acted with a given actor or actress
+ * @param actorName the name of the actor or actress
+ * @param movies (a vector of the Movies for a given actor or actress)
+ * @param fileName the file name (purely utility purpose
+ */
 vector<string> findCostars(string actorName, vector<Movie> movies, string fileName);
+
+/**
+ * Finds all the actors who were in a given movie.
+ * @param movie the movie you wish to get the actors for (note actors and actresses)
+ * @param fileName the file name (purely utility purpose
+ */
 vector<string> findActorsIn(string movie, string fileName);
 
+/**
+ * Remove white space
+ * @param s the string to trim out the white space
+ */
+string removeSpaces(const string &s);
 /**
  * Trim a string...because we all like neatly trimmed strings...amiright?!
  * @param s the string to trim (returned and passed by reference).
@@ -64,7 +89,6 @@ void displayMenu(bool &choice) {
 			cout << "Name of movie? ";
 			string name;
 			getline(cin, name);
-			cout << "name: " << name << endl;
 			vector<string> actors = findActorsIn(name, "actors.2010.list");
 			if (actors.size() == 0) {
 				cout << "No such movie was made in 2010 by that name!!!" << endl;
@@ -151,6 +175,7 @@ vector<Movie> findMoviesFor(string actor, string fileName) {
 				&& line.find("(") != string::npos) {
 			string movieName = line.substr(0, line.find('('));
 			trim(movieName);
+			movieName = removeSpaces(movieName);
 			Movie movie(movieName);
 			if (actor == fullName) {
 				movies.push_back(movie);
@@ -158,7 +183,6 @@ vector<Movie> findMoviesFor(string actor, string fileName) {
 		}
 	}
 	file.close();
-	cout << movies.size() << endl;
 	return movies;
 }
 
@@ -178,10 +202,11 @@ vector<string> findCostars(string actor, vector<Movie> movies, string fileName) 
 					&& line.find("(") != string::npos) {
 				string movieName = line.substr(0, line.find('('));
 				trim(movieName);
-				cout << movieName << endl;
+				movieName = removeSpaces(movieName);
 				if (movies[i].getName() == movieName) {
 					if (actor != fullName) {
 						costars.push_back(fullName);
+						cout<<fullName<<endl;
 					}
 				}
 			}
@@ -191,7 +216,6 @@ vector<string> findCostars(string actor, vector<Movie> movies, string fileName) 
 	return costars;
 }
 
-//TODO: FIX
 vector<string> findActorsIn(string movie, string fileName) {
 	ifstream file(fileName.c_str());
 	vector<string> actors;
@@ -205,14 +229,10 @@ vector<string> findActorsIn(string movie, string fileName) {
 		} else if (line != "" && line.find("\t") != string::npos
 				&& line.find("(") != string::npos) {
 			string movieName = line.substr(0,line.find('('));
-			cout<<movieName<<endl;
+			movieName = removeSpaces(movieName);
 			trim(movieName);
-			int k = 0;
-				while ((k = movieName.find("\t", k)) != string::npos) {
-					movieName.erase(k, 1);
-				}
+			movieName = removeSpaces(movieName);
 			if (movie==movieName) {
-				cout<<"BAZINGA!"<<endl;
 				actors.push_back(fullName);
 			}
 		}
@@ -221,9 +241,17 @@ vector<string> findActorsIn(string movie, string fileName) {
 	return actors;
 }
 
+// removes tabs
 void trim(string &s) {
 	int k = 0;
 	while ((k = s.find('\t', k)) != s.npos) {
 		s.erase(k, 1);
 	}
+}
+// taken from http://stackoverflow.com/a/6057320
+string removeSpaces(const string &s) {
+  int last = s.size() - 1;
+  while (last >= 0 && s[last] == ' ' || s[last]=='\t')
+    --last;
+  return s.substr(0, last + 1);
 }
