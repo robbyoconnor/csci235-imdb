@@ -14,9 +14,25 @@
 
 class Movie {
 	public:
+		/**
+		 * Used to construct a movie by setting the name...
+		 * @param name
+		 */
 		Movie(std::string name);
+		/**
+		 * Default ctor
+		 */
 		Movie();
+		/**
+		 * Get the name
+		 * @return the name of the movie
+		 */
 		std::string getName();
+
+		/**
+		 * Set the name...
+		 * @param name the name of the movie
+		 */
 		void setName(std::string name);
 	private:
 		std::string name;
