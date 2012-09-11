@@ -13,6 +13,8 @@
 #include <vector>
 #include <fstream>
 #include <cstdlib>
+#include <algorithm>
+#include <string>
 
 #include "Actor.h"
 #include "Movie.h"
@@ -23,8 +25,14 @@ using namespace std;
  */
 void displayMenu(bool &done);
 vector<Movie> findMoviesFor(string actorName, string fileName);
-vector<Actor> findCostars(string actorName, vector<Movie> movies, string fileName);
-vector<Actor> findActorsIn(string movie, string fileName);
+vector<string> findCostars(string actorName, vector<Movie> movies, string fileName);
+vector<string> findActorsIn(string movie, string fileName);
+
+/**
+ * Trim a string...because we all like neatly trimmed strings...amiright?!
+ * @param s the string to trim (returned and passed by reference).
+ */
+void trim(string &s);
 
 /**
  * Find the costars for a given actor
@@ -41,7 +49,7 @@ int main(int argc, char* argv[]) {
 
 void displayMenu(bool &choice) {
 	int response;
-	cout<<endl<<endl;
+	cout << endl << endl;
 	cout << "2010 Movie DB." << endl;
 	cout << "1. Find actors" << endl;
 	cout << "2. Find actresses" << endl;
@@ -49,19 +57,24 @@ void displayMenu(bool &choice) {
 	cout << "4. Find costars (actresses)" << endl;
 	cout << "Please select an option (or type\"0\" to end the program: ";
 	string input;
-	getline(cin,input);
+	getline(cin, input);
 	response = atoi(input.c_str());
 	switch (response) {
 		case 1: {
 			cout << "Name of movie? ";
 			string name;
 			getline(cin, name);
-			cout<<"name: "<<name<<endl;
-			vector<Actor> actors = findActorsIn(name, "actors.2010.list");
-			cout << "\nActors in " << name << ": " << endl;
-			for(int i = 0;i < actors.size();i++) {
-				cout << " * " << actors[i].getFirstName().append(" ").append(
-						actors[i].getLastName());
+			cout << "name: " << name << endl;
+			vector<string> actors = findActorsIn(name, "actors.2010.list");
+			if (actors.size() == 0) {
+				cout << "No such movie was made in 2010 by that name!!!" << endl;
+				break;
+
+			} else {
+				cout << "\nActors in " << name << ": " << endl;
+				for(int i = 0;i < actors.size();i++) {
+					cout << " * " << actors[i] << endl;
+				}
 			}
 			break;
 		}
@@ -69,11 +82,15 @@ void displayMenu(bool &choice) {
 			cout << "Name of movie? ";
 			string name;
 			getline(cin, name);
-			vector<Actor> actors = findActorsIn(name, "actresses.2010.list");
-			cout << "\nActresses in " << name << ": " << endl;
-			for(int i = 0;i < actors.size();i++) {
-				cout << " * " << actors[i].getFirstName().append(" ").append(
-						actors[i].getLastName());
+			vector<string> actresses = findActorsIn(name, "actresses.2010.list");
+			if (actresses.size() == 0) {
+				cout << "No such movie was made in 2010 by that name!!!" << endl;
+
+			} else {
+				cout << "\nActresses in " << name << ": " << endl;
+				for(int i = 0;i < actresses.size();i++) {
+					cout << " * " << actresses[i] << endl;
+				}
 			}
 			break;
 		}
@@ -81,12 +98,11 @@ void displayMenu(bool &choice) {
 			cout << "Name of actor? ";
 			string name;
 			getline(cin, name);
-			vector<Actor> costars = findCostars(name, findMoviesFor(name, "actors.2010.list"),
+			vector<string> costars = findCostars(name, findMoviesFor(name, "actors.2010.list"),
 					"actors.2010.list");
 			cout << "\nThe following are costars of " << name << ": " << endl;
 			for(int i = 0;i < costars.size();i++) {
-				cout << " * " << costars[i].getFirstName().append(" ").append(
-						costars[i].getLastName());
+				cout << " * " << costars[i] << endl;
 			}
 			break;
 		}
@@ -95,12 +111,16 @@ void displayMenu(bool &choice) {
 			cout << "Name of actresses? ";
 			string name;
 			getline(cin, name);
-			vector<Actor> costars = findCostars(name, findMoviesFor(name, "actresses.2010.list"),
+			vector<string> costars = findCostars(name, findMoviesFor(name, "actresses.2010.list"),
 					"actresses.2010.list");
-			cout << "\nThe following are costars of " << name << ": " << endl;
-			for(int i = 0;i < costars.size();i++) {
-				cout << " * " << costars[i].getFirstName().append(" ").append(
-						costars[i].getLastName());
+			if (costars.size() == 0) {
+				cout << "No costars found." << endl;
+
+			} else {
+				cout << "\nThe following are costars of " << name << ": " << endl;
+				for(int i = 0;i < costars.size();i++) {
+					cout << " * " << costars[i] << endl;
+				}
 			}
 			break;
 		}
@@ -110,90 +130,100 @@ void displayMenu(bool &choice) {
 
 		}
 		default: {
-		cout << "Invalid choice! Please select only 1-4 or \"0\" to quit: ";
+			cout << "Invalid choice! Please select only 1-4 or \"0\" to quit: ";
 			cin >> response;
 			break;
 		}
 	}
-
 }
+
 vector<Movie> findMoviesFor(string actor, string fileName) {
 	ifstream file(fileName.c_str());
 	vector<Movie> movies;
-	while (file) {
-		string line = "";
-		string fullName = "";
-		while (getline(file, line)) {
-			if(line == "")
-				continue;
-			if (line.find(',') != string::npos) { // actor or actress name
-				string last = line.substr(0, line.find_first_of(",") + 2);
-				string first = line.substr(last.size(), line.size());
-				fullName = first.append(" ").append(last);
-			} else if (line.find('(') != string::npos) { // movie name
-				string movieName = line.substr(0, line.find('('));
-				Movie movie(movieName);
-				if (actor == fullName) {
-					movies.push_back(movie);
-				}
+	string line = "";
+	string fullName = "";
+	while (file && getline(file, line)) {
+		if (line.find("\t") == string::npos && line.find(',') != string::npos) {
+			string last = line.substr(0, line.find_first_of(","));
+			string first = line.substr(line.find_first_of(",") + 2, line.length());
+			fullName = first.append(" ").append(last);
+		} else if (line != "" && line.find("\t") != string::npos
+				&& line.find("(") != string::npos) {
+			string movieName = line.substr(0, line.find('('));
+			trim(movieName);
+			Movie movie(movieName);
+			if (actor == fullName) {
+				movies.push_back(movie);
 			}
 		}
-		file.close();
 	}
+	file.close();
+	cout << movies.size() << endl;
 	return movies;
 }
 
-vector<Actor> findCostars(string actor, vector<Movie> movies, string fileName) {
-	vector<Actor> costars;
-	cout<<movies.size();
+vector<string> findCostars(string actor, vector<Movie> movies, string fileName) {
+	vector<string> costars;
 	for(int i = 0;i < movies.size();i++) {
 		ifstream file(fileName.c_str());
 		string line = "";
 		string fullName = "";
 		string first, last;
-		while (getline(file, line)) {
-			if(line == "")
-				continue;
-			if (line.find(',') != string::npos) { // actor or actress name
-				last = line.substr(0, line.find_first_of(",") + 2);
-				first = line.substr(last.size(), line.size());
-				cout<<first<<" "<<last;
+		while (file && getline(file, line)) {
+			if (line.find("\t") == string::npos && line.find(',') != string::npos) {
+				last = line.substr(0, line.find_first_of(","));
+				first = line.substr(last.size() + 2, line.size());
 				fullName = first.append(" ").append(last);
-			} else if (line.find('(') != string::npos) { // movie name
+			} else if (line != "" && line.find("\t") != string::npos
+					&& line.find("(") != string::npos) {
 				string movieName = line.substr(0, line.find('('));
-				Movie movie(movieName);
-				if (actor == fullName && movies[i].getName() == movieName) {
-					costars.push_back(Actor(first, last));
+				trim(movieName);
+				cout << movieName << endl;
+				if (movies[i].getName() == movieName) {
+					if (actor != fullName) {
+						costars.push_back(fullName);
+					}
 				}
 			}
 		}
 		file.close();
 	}
-	cout<<costars.size();
 	return costars;
 }
 
-vector<Actor> findActorsIn(string movie, string fileName) {
-	vector<Actor> actors;
+//TODO: FIX
+vector<string> findActorsIn(string movie, string fileName) {
 	ifstream file(fileName.c_str());
+	vector<string> actors;
 	string line = "";
 	string fullName = "";
-	string first, last;
-	bool keepgoing = true;
-	while (getline(file, line) && keepgoing) {
-		if(line == "") {
-			continue; // I'm tired and shit works.
-		}
-		if (line.find(',') != string::npos) { // actor or actress name
-			last = line.substr(0, line.find_first_of(",") + 2);
-			first = line.substr(last.size(), line.size());
-		} else if (line.find('(') != string::npos) { // movie name
-			string movieName = line.substr(0, line.find('('));
-			if (movieName == movie) {
-				actors.push_back(Actor(first, last));
+	while (file && getline(file, line)) {
+		if (line.find("\t") == string::npos && line.find(',') != string::npos) {
+			string last = line.substr(0, line.find_first_of(","));
+			string first = line.substr(line.find_first_of(",") + 2, line.length());
+			fullName = first.append(" ").append(last);
+		} else if (line != "" && line.find("\t") != string::npos
+				&& line.find("(") != string::npos) {
+			string movieName = line.substr(0,line.find('('));
+			cout<<movieName<<endl;
+			trim(movieName);
+			int k = 0;
+				while ((k = movieName.find("\t", k)) != string::npos) {
+					movieName.erase(k, 1);
+				}
+			if (movie==movieName) {
+				cout<<"BAZINGA!"<<endl;
+				actors.push_back(fullName);
 			}
 		}
-		file.close();
 	}
+	file.close();
 	return actors;
+}
+
+void trim(string &s) {
+	int k = 0;
+	while ((k = s.find('\t', k)) != s.npos) {
+		s.erase(k, 1);
+	}
 }
