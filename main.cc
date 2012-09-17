@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
 }
 
 void displayMenu(bool &choice) {
-	int response;
+	char response;
 	cout << endl << endl;
 	cout << "2010 Movie DB." << endl;
 	cout << "1. Find actors" << endl;
@@ -123,9 +123,13 @@ void displayMenu(bool &choice) {
 			getline(cin, name);
 			vector<string> costars = findCostars(name, findMoviesFor(name, "actors.2010.list"),
 					"actors.2010.list");
-			cout << "\nThe following are costars of " << name << ": " << endl;
-			for(int i = 0;i < costars.size();i++) {
-				cout << " * " << costars[i] << endl;
+			if (!costars.size()) {
+				cout << "No costars found." << endl;
+			} else {
+				cout << "\nThe following are costars of " << name << ": " << endl;
+				for(int i = 0;i < costars.size();i++) {
+					cout << " * " << costars[i] << endl;
+				}
 			}
 			break;
 		}
@@ -205,7 +209,7 @@ vector<string> findCostars(string actor, vector<Movie> movies, string fileName) 
 				if (movies[i].getName() == movieName) {
 					if (actor != fullName) {
 						costars.push_back(fullName);
-						cout<<fullName<<endl;
+						cout << fullName << endl;
 					}
 				}
 			}
@@ -227,11 +231,11 @@ vector<string> findActorsIn(string movie, string fileName) {
 			fullName = first.append(" ").append(last);
 		} else if (line != "" && line.find("\t") != string::npos
 				&& line.find("(") != string::npos) {
-			string movieName = line.substr(0,line.find('('));
+			string movieName = line.substr(0, line.find('('));
 			movieName = removeSpaces(movieName);
 			trim(movieName);
 			movieName = removeSpaces(movieName);
-			if (movie==movieName) {
+			if (movie == movieName) {
 				actors.push_back(fullName);
 			}
 		}
@@ -246,11 +250,14 @@ void trim(string &s) {
 	while ((k = s.find('\t', k)) != s.npos) {
 		s.erase(k, 1);
 	}
+
+	// remove spaces...
 }
+
 // taken from http://stackoverflow.com/a/6057320
 string removeSpaces(const string &s) {
-  int last = s.size() - 1;
-  while (last >= 0 && s[last] == ' ' || s[last]=='\t')
-    --last;
-  return s.substr(0, last + 1);
+	int last = s.size() - 1;
+	while (last >= 0 && s[last] == ' ')
+		--last;
+	return s.substr(0, last + 1);
 }
